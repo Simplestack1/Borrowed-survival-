@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Borrowed Survival</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#000;font-family:'Crimson Text',Georgia,serif;overflow:hidden;height:100vh;width:100vw;}
+#app{width:100%;height:100vh;position:relative;}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glitch{
+  0%,100%{transform:translate(0,0);filter:none}
+  15%{transform:translate(-2px,1px);filter:hue-rotate(60deg) saturate(2)}
+  30%{transform:translate(2px,-1px);filter:hue-rotate(120deg)}
+  45%{transform:translate(-1px,2px);filter:hue-rotate(180deg) saturate(3)}
+  60%{transform:translate(1px,-1px);filter:hue-rotate(240deg)}
+  75%{transform:translate(-2px,0);filter:hue-rotate(300deg) saturate(2)}
+}
+@keyframes charmIn{from{opacity:0;transform:scale(.75) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes charmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes walletPop{0%{opacity:0;transform:translateY(-10px) scale(.95)}60%{transform:translateY(2px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes redPulse{0%,100%{box-shadow:0 0 8px rgba(220,38,38,.4)}50%{box-shadow:0 0 24px rgba(220,38,38,.9)}}
+@keyframes titleFlicker{0%,96%,100%{opacity:1}97%{opacity:.6}98%{opacity:1}99%{opacity:.3}}
+@keyframes bgFadeIn{from{opacity:0}to{opacity:1}}
+
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.hidden{display:none!important;}
+.fade-in{animation:fadeIn .4s ease forwards;}
+.fade-up{animation:fadeUp .5s ease forwards;}
+.glitch{animation:glitch .4s infinite;}
+
+/* BACKGROUNDS */
+.bg{
+  position:absolute;inset:0;
+  background-size:cover;background-position:center;
+  transition:opacity .55s ease;
+}
+.vignette{
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(0,0,0,.25) 0%,rgba(0,0,0,.15) 40%,rgba(0,0,0,.88) 100%);
+  pointer-events:none;z-index:1;
+}
+
+/* TITLE */
+#titleScreen{
+  background:radial-gradient(ellipse at 50% 60%,#1a0303 0%,#0a0101 50%,#000 100%);
+  cursor:pointer;user-select:none;padding:2rem;text-align:center;z-index:10;
+}
+.title-label{font-family:'Cinzel',Georgia,serif;font-size:.6rem;letter-spacing:.45em;color:#dc2626;margin-bottom:1.25rem;animation:pulse 2s infinite;}
+.title-main{font-family:'Cinzel',Georgia,serif;font-size:clamp(2.8rem,9vw,4.5rem);font-weight:900;color:#fff;line-height:1;margin-bottom:.15rem;text-shadow:0 0 50px rgba(220,38,38,.4);animation:titleFlicker 6s infinite;}
+.title-red{font-family:'Cinzel',Georgia,serif;font-size:clamp(2.8rem,9vw,4.5rem);font-weight:900;color:#dc2626;line-height:1;margin-bottom:2.5rem;text-shadow:0 0 50px rgba(220,38,38,.9),0 0 100px rgba(220,38,38,.4);}
+.title-divider{width:48px;height:1px;background:linear-gradient(90deg,transparent,#dc2626,transparent);margin:0 auto 2rem;}
+.title-sub{font-family:Georgia,serif;color:#374151;font-size:.7rem;letter-spacing:.35em;margin-bottom:3.5rem;}
+.title-tap{color:#1f2937;font-size:.65rem;letter-spacing:.2em;font-family:'Cinzel',Georgia,serif;animation:pulse 1.8s infinite;}
+
+/* GAME SCREEN */
+#gameScreen{z-index:10;}
+#gameBg{z-index:0;}
+#chapterHeader{
+  position:absolute;top:3rem;left:0;right:0;text-align:center;
+  font-family:'Cinzel',Georgia,serif;font-size:.58rem;letter-spacing:.35em;color:#dc2626;z-index:10;
+}
+
+/* CHARM BAR */
+#charmBar{position:absolute;top:.85rem;left:.85rem;z-index:50;display:flex;gap:.4rem;}
+.charm-icon{
+  width:28px;height:28px;border-radius:6px;
+  background:rgba(0,0,0,.65);border:1px solid;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;backdrop-filter:blur(6px);
+  transition:opacity .3s;
+}
+
+/* RESTART BTN */
+.restart-btn{
+  position:absolute;top:.85rem;right:.85rem;z-index:50;
+  background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;padding:.3rem .65rem;color:#4b5563;
+  font-size:.58rem;font-family:'Cinzel',Georgia,serif;
+  letter-spacing:.15em;backdrop-filter:blur(6px);cursor:pointer;
+}
+.restart-btn:hover{color:#9ca3af;border-color:rgba(255,255,255,.25);}
+
+/* WALLET */
+#walletPopup{
+  position:absolute;top:3.5rem;right:1rem;
+  background:rgba(5,46,22,.92);border:1px solid rgba(74,222,128,.4);
+  border-radius:10px;padding:.75rem 1rem;z-index:10;max-width:200px;
+  animation:walletPop .4s ease forwards;backdrop-filter:blur(8px);
+}
+.wallet-label{font-family:monospace;font-size:.6rem;color:#4ade80;letter-spacing:.1em;margin-bottom:.2rem;}
+.wallet-amount{font-family:'Cinzel',Georgia,serif;font-size:1.1rem;color:#86efac;font-weight:700;}
+
+/* DIALOGUE */
+#dialogueArea{position:absolute;bottom:0;left:0;right:0;padding:1.25rem;z-index:10;}
+#dialogueBox{
+  background:rgba(0,0,0,.78);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:1.1rem 1.2rem;
+  animation:fadeIn .4s ease forwards;
+}
+#dialogueBox.esu-style{animation:redPulse 2s infinite,fadeIn .4s ease forwards;}
+#speakerName{font-family:'Cinzel',Georgia,serif;font-size:.58rem;letter-spacing:.28em;margin-bottom:.45rem;}
+#dialogueText{font-size:1rem;line-height:1.65;min-height:1.65rem;}
+#tapHint{text-align:right;margin-top:.6rem;color:#1f2937;font-size:.58rem;letter-spacing:.15em;font-family:'Cinzel',Georgia,serif;animation:pulse 1.8s infinite;}
+
+/* CHOICES */
+#choicesArea{animation:fadeUp .5s ease forwards;}
+#choicesLabel{font-family:'Cinzel',Georgia,serif;font-size:.58rem;letter-spacing:.3em;color:#4b5563;text-align:center;margin-bottom:.85rem;}
+.choice-btn{
+  width:100%;display:block;padding:.85rem 1.1rem;margin-bottom:.5rem;
+  background:rgba(0,0,0,.65);border:1px solid rgba(220,38,38,.28);
+  border-radius:7px;color:#e2e8f0;font-family:'Crimson Text',Georgia,serif;
+  font-size:.95rem;text-align:left;backdrop-filter:blur(8px);cursor:pointer;
+}
+.choice-btn:hover{background:rgba(220,38,38,.18);border-color:rgba(220,38,38,.7);}
+.choice-arrow{color:#dc2626;margin-right:.7rem;}
+
+/* CHARMS SCREEN */
+#charmsScreen{
+  z-index:20;background-size:cover;background-position:center;
+  overflow-y:auto;padding:1.25rem;
+}
+#charmsOverlay{position:fixed;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.65),rgba(0,0,0,.85));pointer-events:none;z-index:0;}
+#charmsContent{position:relative;z-index:2;width:100%;max-width:420px;margin:0 auto;padding:2rem 0;}
+.charms-eyebrow{font-family:'Cinzel',Georgia,serif;font-size:.6rem;letter-spacing:.4em;color:#f97316;text-align:center;margin-bottom:.4rem;}
+.charms-title{font-family:'Cinzel',Georgia,serif;font-size:1.35rem;color:#fff;text-align:center;margin-bottom:.3rem;}
+.charms-sub{font-family:'Crimson Text',Georgia,serif;color:#6b7280;font-size:.85rem;text-align:center;font-style:italic;margin-bottom:1.5rem;}
+#charmsGrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem;}
+.charm-card{
+  background:rgba(0,0,0,.75);border-radius:10px;padding:1rem;text-align:center;
+  transition:transform .25s,box-shadow .25s;
+}
+.charm-card:hover{transform:translateY(-5px);}
+.charm-card-icon{font-size:2.2rem;margin-bottom:.5rem;}
+.charm-card-name{font-family:'Cinzel',Georgia,serif;font-size:.55rem;letter-spacing:.15em;margin-bottom:.4rem;}
+.charm-card-desc{font-family:'Crimson Text',Georgia,serif;color:#9ca3af;font-size:.78rem;line-height:1.4;font-style:italic;margin-bottom:.6rem;}
+.charm-card-quote-wrap{padding-top:.5rem;}
+.charm-card-quote{font-family:'Crimson Text',Georgia,serif;color:#4b5563;font-size:.65rem;font-style:italic;line-height:1.35;}
+#esuFinalWords{
+  background:rgba(0,0,0,.7);border:1px solid rgba(249,115,22,.3);
+  border-radius:8px;padding:1rem;margin-bottom:1.25rem;animation:redPulse 2s infinite;
+}
+.esu-final-speaker{font-family:'Cinzel',Georgia,serif;font-size:.55rem;letter-spacing:.2em;color:#f97316;margin-bottom:.4rem;}
+.esu-final-text{font-family:'Crimson Text',Georgia,serif;color:#fed7aa;font-size:.95rem;font-style:italic;line-height:1.6;}
+.charms-continue{font-family:'Crimson Text',Georgia,serif;color:#374151;font-size:.8rem;font-style:italic;text-align:center;animation:pulse 2s infinite;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TITLE SCREEN -->
+<div id="titleScreen" class="screen" onclick="startGame()">
+  <p class="title-label">A VISUAL NOVEL</p>
+  <h1 class="title-main">BORROWED</h1>
+  <h1 class="title-red">SURVIVAL</h1>
+  <div class="title-divider"></div>
+  <p class="title-sub">ALL DEBTS MUST BE PAID.</p>
+  <p class="title-tap">TAP TO BEGIN</p>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen" class="screen hidden" onclick="advance()">
+  <div id="gameBg" class="bg"></div>
+  <div class="vignette"></div>
+
+  <!-- charm bar -->
+  <div id="charmBar">
+    <div class="charm-icon" id="charm-shadow" title="Shadow Pass" style="border-color:rgba(124,58,237,.35);color:#7c3aed;">◐</div>
+    <div class="charm-icon" id="charm-truth"  title="Truth Whisper" style="border-color:rgba(37,99,235,.35);color:#2563eb;">◎</div>
+    <div class="charm-icon" id="charm-iron"   title="Iron Skin" style="border-color:rgba(217,119,6,.35);color:#d97706;">◈</div>
+    <div class="charm-icon" id="charm-second" title="Second Chance" style="border-color:rgba(5,150,105,.35);color:#059669;">↺</div>
+  </div>
+  <button class="restart-btn" onclick="event.stopPropagation();resetGame()">↺ RESTART</button>
+
+  <div id="chapterHeader" class="hidden"></div>
+  <div id="walletPopup" class="hidden">
+    <p class="wallet-label">CRYPTO WALLET</p>
+    <p class="wallet-amount">+$500,000</p>
+  </div>
+
+  <div id="dialogueArea">
+    <div id="dialogueBox" class="hidden">
+      <div id="speakerName" class="hidden"></div>
+      <p id="dialogueText"></p>
+      <p id="tapHint">TAP TO CONTINUE ▶</p>
+    </div>
+    <div id="choicesArea" class="hidden">
+      <p id="choicesLabel">CHOOSE YOUR PATH</p>
+      <div id="choicesBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARMS SCREEN -->
+<div id="charmsScreen" class="screen hidden">
+  <div id="charmsOverlay"></div>
+  <button class="restart-btn" onclick="resetGame()">↺ RESTART</button>
+  <div id="charmsContent" class="fade-in">
+    <p class="charms-eyebrow">ESU'S GIFT</p>
+    <h2 class="charms-title">You Receive All Four Charms</h2>
+    <p class="charms-sub">Each charm has one use. Spend them wisely.</p>
+    <div id="charmsGrid"></div>
+    <div id="esuFinalWords">
+      <p class="esu-final-speaker">ESU</p>
+      <p class="esu-final-text">"Use them well. But remember — I gave you tools, not freedom. The debt remains."</p>
+    </div>
+    <p class="charms-continue">The journey continues…</p>
+  </div>
+</div>
+
+</div>
+<script>
+// ─── DATA ───────────────────────────────────────────────────
+const IMAGES = {
+  prologue: "./IMG_20260529_130128.png",
+  blackCar: "./IMG_20260529_130211.png",
+  esuEnters:"./IMG_20260529_130253.png",
+  theOffer: "./IMG_20260529_130326.png",
+};
+
+const CHARMS = [
+  {id:"shadow",icon:"◐",name:"SHADOW PASS",desc:"Hide from enemies temporarily.",quote:"Even shadows betray their owners eventually.",color:"#7c3aed",glow:"rgba(124,58,237,.7)",border:"rgba(124,58,237,.35)"},
+  {id:"truth", icon:"◎",name:"TRUTH WHISPER",desc:"Reveal hidden intentions.",quote:"Truth changes depending on who speaks it.",color:"#2563eb",glow:"rgba(37,99,235,.7)",border:"rgba(37,99,235,.35)"},
+  {id:"iron",  icon:"◈",name:"IRON SKIN",desc:"Protect against physical harm.",quote:"Humans love pretending they are untouchable.",color:"#d97706",glow:"rgba(217,119,6,.7)",border:"rgba(217,119,6,.35)"},
+  {id:"second",icon:"↺",name:"SECOND CHANCE",desc:"Retry fatal mistakes once.",quote:"Regret is repetition wearing another face.",color:"#059669",glow:"rgba(5,150,105,.7)",border:"rgba(5,150,105,.35)"},
+];
+
+const SCENES = {
+  prologue:{
+    bg:"radial-gradient(ellipse at 50% 80%,#1a0a2e 0%,#0a0510 60%,#000005 100%)",
+    image:IMAGES.prologue,chapter:null,
+    lines:[
+      {type:"narration",text:"3:17 AM…"},
+      {type:"narration",text:"Your phone vibrates violently beside your bed."},
+      {type:"narration",text:"Unknown caller."},
+      {type:"narration",text:"The room is dark except for the pale glow of your screen."},
+      {type:"narration",text:"You hesitate… then answer."},
+    ],next:"voice1"
+  },
+  voice1:{
+    bg:"radial-gradient(ellipse at 50% 80%,#1a0a2e 0%,#0a0510 60%,#000005 100%)",
+    image:IMAGES.prologue,chapter:"PROLOGUE — The Mistake",
+    lines:[
+      {type:"voice",speaker:"VOICE",text:"You opened something that was not yours…"},
+      {type:"mc",speaker:"YOU",text:"Who is this? What money? I didn't receive anything!"},
+      {type:"narration",text:"A pause."},
+      {type:"narration",text:"Then laughter. Soft. Wrong. Inhuman."},
+      {type:"voice",speaker:"VOICE",text:"Humans always ask questions after greed has spoken."},
+    ],next:"wallet"
+  },
+  wallet:{
+    bg:"radial-gradient(ellipse at 50% 80%,#0a1a0f 0%,#050f05 60%,#000500 100%)",
+    image:IMAGES.prologue,chapter:null,showWallet:true,
+    lines:[
+      {type:"narration",text:"Your crypto wallet suddenly opens by itself."},
+      {type:"system",text:"Balance update: +$500,000"},
+      {type:"narration",text:"Your breathing becomes uneven."},
+      {type:"mc",speaker:"YOU",text:"This has to be a mistake…"},
+      {type:"voice",speaker:"VOICE",text:"Everything done has a witness."},
+      {type:"narration",text:"The line cuts."},
+      {type:"system",text:"Return it… or you will be returned."},
+    ],next:"choice1"
+  },
+  choice1:{
+    bg:"radial-gradient(ellipse at 50% 80%,#1a0a2e 0%,#0a0510 60%,#000005 100%)",
+    image:IMAGES.prologue,chapter:"CHAPTER 1 — The First Choice",
+    lines:[
+      {type:"narration",text:"You stare at the money."},
+      {type:"narration",text:"Your thoughts race."},
+      {type:"narration",text:"Half a million dollars."},
+      {type:"narration",text:"Sitting in your wallet."},
+      {type:"narration",text:"Like it was always meant to be there."},
+    ],isChoice:true,
+    choices:[
+      {text:"Return the money",next:"returnCall"},
+      {text:"Ignore the message",next:"blackcar"},
+      {text:"Move the money elsewhere",next:"blackcar"},
+    ]
+  },
+  returnCall:{
+    bg:"radial-gradient(ellipse at 50% 80%,#1a0a2e 0%,#0a0510 60%,#000005 100%)",
+    image:IMAGES.prologue,chapter:null,
+    lines:[
+      {type:"narration",text:"You dial back the unknown number."},
+      {type:"narration",text:"It answers immediately."},
+      {type:"narration",text:"No ring. Just silence. Then—"},
+      {type:"voice",speaker:"VOICE",text:"Too late."},
+      {type:"mc",speaker:"YOU",text:"What do you mean too late? I haven't touched it—"},
+      {type:"voice",speaker:"VOICE",text:"You already know too much."},
+      {type:"narration",text:"The line dies."},
+      {type:"narration",text:"Your phone screen cracks down the middle on its own."},
+      {type:"system",text:"The money cannot be returned."},
+    ],next:"blackcar"
+  },
+  blackcar:{
+    bg:"radial-gradient(ellipse at 50% 100%,#0a1525 0%,#050815 60%,#010308 100%)",
+    image:IMAGES.blackCar,chapter:"CHAPTER 2 — The Chase Begins",
+    lines:[
+      {type:"narration",text:"Minutes later…"},
+      {type:"narration",text:"Footsteps outside your apartment."},
+      {type:"narration",text:"Slow. Heavy. Intentional."},
+      {type:"mc",speaker:"YOU",text:"How do they already know where I live…?"},
+      {type:"narration",text:"Your phone vibrates again."},
+      {type:"narration",text:"The streetlights outside begin flickering. One by one."},
+      {type:"narration",text:"Until the entire street falls silent."},
+      {type:"narration",text:"Then—"},
+      {type:"narration",text:"Someone is standing outside."},
+      {type:"narration",text:"A figure. Completely still."},
+      {type:"narration",text:"Smiling. Calm. Watching you."},
+      {type:"narration",text:"You cannot make out the features."},
+      {type:"narration",text:"Just presence."},
+    ],next:"esuenters"
+  },
+  esuenters:{
+    bg:"radial-gradient(ellipse at 50% 30%,#2d0808 0%,#1a0505 50%,#050000 100%)",
+    image:IMAGES.esuEnters,chapter:"CHAPTER 3 — ESU",
+    lines:[
+      {type:"narration",text:"You freeze."},
+      {type:"narration",text:"You never heard the door open."},
+      {type:"narration",text:"Yet suddenly…"},
+      {type:"narration",text:"He is inside your room."},
+      {type:"narration",text:"Dressed in a golden agbada that seems to absorb the darkness around it."},
+      {type:"narration",text:"Jewellery at his wrists, his neck, his fingers — each piece glowing faintly."},
+      {type:"narration",text:"He moves like someone who has never been told no."},
+      {type:"esu",speaker:"ESU",text:"Fear smells different on humans who are guilty."},
+      {type:"mc",speaker:"YOU",text:"Who are you?!"},
+      {type:"esu",speaker:"ESU",text:"Names are for those afraid of being forgotten."},
+      {type:"narration",text:"He walks closer. The air becomes heavier."},
+      {type:"narration",text:"Your phone screen cracks further on its own."},
+      {type:"esu",speaker:"ESU",text:"You have been noticed."},
+      {type:"mc",speaker:"YOU",text:"Did you do this?"},
+      {type:"esu",speaker:"ESU",text:"I offer survival."},
+      {type:"narration",text:"A pause. His jewellery catches a light that isn't there."},
+      {type:"esu",speaker:"ESU",text:"But survival is never free."},
+    ],next:"charms"
+  },
+  charms:{
+    bg:"radial-gradient(ellipse at 50% 30%,#3d1500 0%,#1a0800 50%,#050200 100%)",
+    image:IMAGES.theOffer,chapter:"CHAPTER 4 — The Charms",
+    lines:[
+      {type:"narration",text:"Esu stretches out his hand."},
+      {type:"narration",text:"Four strange charms appear — burning softly in the darkness."},
+      {type:"esu",speaker:"ESU",text:"Take them. All of them."},
+      {type:"mc",speaker:"YOU",text:"All of them?"},
+      {type:"esu",speaker:"ESU",text:"You will need every advantage where you are going."},
+      {type:"narration",text:"The charms drift toward you one by one."},
+      {type:"narration",text:"Each one warm. Each one waiting."},
+    ],isCharmReceive:true
+  },
+};
+
+// speaker colours
+const SPEAKER_COLOR={voice:"#ef4444",esu:"#f97316",mc:"#93c5fd",system:"#4ade80",narration:"#cbd5e1"};
+const TEXT_COLOR={voice:"#fca5a5",esu:"#fed7aa",mc:"#dbeafe",system:"#86efac",narration:"#e2e8f0"};
+const BOX_BORDER={esu:"rgba(249,115,22,.35)",voice:"rgba(239,68,68,.35)",system:"rgba(74,222,128,.3)",default:"rgba(255,255,255,.08)"};
+
+// ─── STATE ───────────────────────────────────────────────────
+let currentScene="prologue", lineIdx=0, typing=false, showingChoices=false, typingTimer=null, fading=false;
+
+// ─── ELEMENTS ────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const titleScreen  = $("titleScreen");
+const gameScreen   = $("gameScreen");
+const charmsScreen = $("charmsScreen");
+const gameBg       = $("gameBg");
+const chapterHeader= $("chapterHeader");
+const walletPopup  = $("walletPopup");
+const dialogueBox  = $("dialogueBox");
+const speakerName  = $("speakerName");
+const dialogueText = $("dialogueText");
+const tapHint      = $("tapHint");
+const choicesArea  = $("choicesArea");
+const choicesBtns  = $("choicesBtns");
+
+// ─── INIT ────────────────────────────────────────────────────
+function startGame(){
+  titleScreen.classList.add("hidden");
+  gameScreen.classList.remove("hidden");
+  loadScene("prologue");
+}
+
+function resetGame(){
+  clearTimeout(typingTimer);
+  currentScene="prologue"; lineIdx=0; typing=false; showingChoices=false; fading=false;
+  titleScreen.classList.remove("hidden");
+  gameScreen.classList.add("hidden");
+  charmsScreen.classList.add("hidden");
+}
+
+function loadScene(id){
+  currentScene=id; lineIdx=0; showingChoices=false;
+  const scene=SCENES[id];
+
+  // background
+  if(scene.image){
+    gameBg.style.backgroundImage=`url(${scene.image})`;
+    gameBg.style.background="";
+  } else {
+    gameBg.style.backgroundImage="";
+    gameBg.style.background=scene.bg;
+  }
+
+  // chapter header
+  if(scene.chapter){
+    chapterHeader.textContent=scene.chapter;
+    chapterHeader.classList.remove("hidden");
+  } else {
+    chapterHeader.classList.add("hidden");
+  }
+
+  walletPopup.classList.add("hidden");
+  choicesArea.classList.add("hidden");
+  dialogueBox.classList.remove("hidden");
+  showLine();
+}
+
+function showLine(){
+  const scene=SCENES[currentScene];
+  const line=scene.lines[lineIdx];
+  if(!line) return;
+
+  // wallet popup
+  if(scene.showWallet && lineIdx>=1 && lineIdx<=3){
+    walletPopup.classList.remove("hidden");
+  } else {
+    walletPopup.classList.add("hidden");
+  }
+
+  // dialogue box styling
+  const border = BOX_BORDER[line.type]||BOX_BORDER.default;
+  dialogueBox.style.borderColor=border;
+  dialogueBox.className = line.type==="esu" ? "esu-style" : "";
+
+  // speaker
+  if(line.speaker){
+    speakerName.classList.remove("hidden");
+    speakerName.style.color=SPEAKER_COLOR[line.type]||"#fff";
+    speakerName.innerHTML=line.speaker+(line.type==="voice"?' <span style="opacity:.6;font-size:.52rem">[DISTORTED]</span>':"");
+  } else {
+    speakerName.classList.add("hidden");
+  }
+
+  // text styling
+  dialogueText.style.fontFamily = line.type==="system"?"monospace":"'Crimson Text',Georgia,serif";
+  dialogueText.style.color = TEXT_COLOR[line.type]||"#e2e8f0";
+  dialogueText.style.fontStyle = (line.type==="narration"||line.type==="voice")?"italic":"normal";
+  dialogueText.className = line.type==="voice"?"glitch":"";
+
+  tapHint.style.display="none";
+  typeText(line.text);
+}
+
+function typeText(text){
+  clearTimeout(typingTimer);
+  dialogueText.textContent="";
+  typing=true;
+  let i=0;
+  const speed=text.length>60?25:30;
+  function tick(){
+    i++;
+    dialogueText.textContent=text.slice(0,i)+(i<text.length?"▌":"");
+    if(i>=text.length){
+      typing=false;
+      dialogueText.textContent=text;
+      tapHint.style.display="block";
+    } else {
+      typingTimer=setTimeout(tick,speed);
+    }
+  }
+  tick();
+}
+
+function advance(){
+  if(fading||showingChoices) return;
+  if(typing){
+    clearTimeout(typingTimer);
+    const scene=SCENES[currentScene];
+    const line=scene.lines[lineIdx];
+    typing=false;
+    dialogueText.textContent=line.text;
+    tapHint.style.display="block";
+    return;
+  }
+  const scene=SCENES[currentScene];
+  const next=lineIdx+1;
+  if(next<scene.lines.length){
+    lineIdx=next;
+    showLine();
+    return;
+  }
+  if(scene.isChoice){ showChoices(); return; }
+  if(scene.isCharmReceive){ showCharmsScreen(); return; }
+  if(scene.next){ fadeToScene(scene.next); }
+}
+
+function showChoices(){
+  showingChoices=true;
+  dialogueBox.classList.add("hidden");
+  choicesArea.classList.remove("hidden");
+  const scene=SCENES[currentScene];
+  choicesBtns.innerHTML="";
+  scene.choices.forEach(ch=>{
+    const btn=document.createElement("button");
+    btn.className="choice-btn";
+    btn.innerHTML=`<span class="choice-arrow">▶</span>${ch.text}`;
+    btn.onclick=e=>{ e.stopPropagation(); fadeToScene(ch.next); };
+    choicesBtns.appendChild(btn);
+  });
+}
+
+function fadeToScene(id){
+  fading=true;
+  gameScreen.style.opacity="0";
+  gameScreen.style.transition="opacity .55s ease";
+  setTimeout(()=>{
+    loadScene(id);
+    showingChoices=false;
+    choicesArea.classList.add("hidden");
+    dialogueBox.classList.remove("hidden");
+    gameScreen.style.opacity="1";
+    fading=false;
+  },550);
+}
+
+function showCharmsScreen(){
+  gameScreen.classList.add("hidden");
+  charmsScreen.classList.remove("hidden");
+  charmsScreen.style.backgroundImage=`url(${IMAGES.theOffer})`;
+
+  // build charm cards
+  const grid=$("charmsGrid");
+  grid.innerHTML="";
+  CHARMS.forEach((c,i)=>{
+    const card=document.createElement("div");
+    card.className="charm-card";
+    card.style.border=`1px solid ${c.border}`;
+    card.style.boxShadow=`0 4px 20px ${c.glow.replace(".7",".2")}`;
+    card.style.animation=`charmIn .5s ease ${i*.12}s both, charmFloat ${2.5+i*.3}s ease ${i*.2}s infinite`;
+    card.innerHTML=`
+      <div class="charm-card-icon" style="color:${c.color};text-shadow:0 0 18px ${c.glow}">${c.icon}</div>
+      <p class="charm-card-name" style="color:${c.color}">${c.name}</p>
+      <p class="charm-card-desc">${c.desc}</p>
+      <div class="charm-card-quote-wrap" style="border-top:1px solid ${c.border}">
+        <p class="charm-card-quote">"${c.quote}"</p>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+</script>
+</body>
+</html>
